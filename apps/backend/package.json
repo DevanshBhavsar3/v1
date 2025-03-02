@@ -10,15 +10,16 @@
     "dev": "pnpm run build && pnpm run start"
   },
   "devDependencies": {
-    "@repo/db": "workspace:*",
+    "@types/express": "^5.0.0",
+    "@repo/common": "workspace:*",
     "@repo/typescript-config": "workspace:*"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@repo/db": "workspace:*",
     "@google/generative-ai": "^0.22.0",
-    "@types/express": "^5.0.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2"
   }
