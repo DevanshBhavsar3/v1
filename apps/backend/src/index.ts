@@ -2,7 +2,6 @@ import express from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as dotenv from "dotenv";
 import { Prompt } from "@repo/common";
-import { SystemPrompt } from "./prompts";
 
 dotenv.config();
 const app = express();
@@ -44,7 +43,7 @@ app.post("/template", async (req, res) => {
     res.status(200).json({ msg: response.response.text() });
   } catch (e) {
     console.log(e);
-    res.status(400).json({ error: "Something went wrong" });
+    res.status(400).json({ error: "Something went wrong." });
     return;
   }
 });
