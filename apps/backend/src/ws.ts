@@ -1,9 +1,9 @@
 import express from "express"
 import { Server } from "socket.io"
 import { createServer } from "node:http"
-// @ts-ignore
-import { fork, IPty } from "node-pty"
+import { TerminalManager } from "./terminalManager"
 
+const terminalManager = new TerminalManager()
 const app = express()
 const server = createServer(app)
 const io = new Server(server, {
@@ -12,30 +12,26 @@ const io = new Server(server, {
     methods: ["GET", "POST",]
   }
 })
-let terminal: IPty;
 
-// Create terminal on connection
 io.on("connection", (socket) => {
-  socket.on("createTerminal", () => {
-    terminal = fork("bash", [], {
-      name: 'xterm',
-      cols: 100,
-      cwd: "/",
-    })
+  const host = socket.handshake.headers.host
+  const sessionId = host?.split(".")[0]
 
-    // Send serever's terminal results to client
-    terminal.onData((data: string) => {
+  if (!sessionId) {
+    socket.disconnect()
+    terminalManager.exit(socket.id)
+    return;
+  }
+
+  socket.on("createTerminal", () => {
+    terminalManager.createTerminal(socket.id, sessionId, (data) => {
       socket.emit("terminalData", { data: Buffer.from(data, "utf-8") })
     })
   })
 
-  // Write commands to server terminal 
   socket.on("writeTerminal", ({ data }) => {
-    terminal.write(data)
+    terminalManager.write(socket.id, data)
   })
-
-  // TODO: delete terminal here 
-  // terminal.onExit(() => terminal = null)
 })
 
 server.listen(8080, () => console.log("Server started on PORT: 8080"))

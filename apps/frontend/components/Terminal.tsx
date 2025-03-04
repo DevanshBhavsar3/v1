@@ -48,7 +48,9 @@ export default function TerminalComponent({ socket }: { socket: Socket }) {
 
     didInit.current = true;
 
-    // TODO: Add Cleanup Logic
+    return () => {
+      terminal.clear()
+    }
   }, [terminalRef]);
 
   return <div ref={terminalRef as React.RefObject<HTMLDivElement>}></div>;

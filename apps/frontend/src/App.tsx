@@ -8,6 +8,10 @@ export default function App() {
   useEffect(() => {
     const socket = io("ws://localhost:8080")
     setSocket(socket)
+
+    return () => {
+      socket.disconnect()
+    }
   }, [])
 
   return <div style={{ width: "100vw", height: "100vh" }}>
