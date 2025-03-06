@@ -1,5 +1,7 @@
+import React from "react";
 import { useRef, useState } from "react";
-import { Socket } from "socket.io-client";
+import { useSocket } from "../store/useSocket.ts";
+import { useFile } from "../store/useFile.ts";
 
 const BASE_DIR = "/home/devansh/CodePlayground";
 
@@ -10,8 +12,11 @@ interface Files {
   children: Files[];
 }
 
-export default function Explorer({ socket }: { socket: Socket }) {
-  const [files, setFiles] = useState<Files[]>([
+export default function Explorer() {
+  const socket = useSocket(state => state.socket)
+  const setFile = useFile(state => state.setFile)
+
+  const [explorer, setExplorer] = useState<Files[]>([
     { type: "dir", name: "CodePlayground", path: BASE_DIR, children: [] },
   ]);
 
@@ -39,20 +44,31 @@ export default function Explorer({ socket }: { socket: Socket }) {
     });
   }
 
-  function getFiles(path: string) {
-    socket.emit("getFiles", path, (data: Files[]) => {
-      const newFiles = updateFiles(files, path, data);
-      setFiles(newFiles);
-    });
+  function getData(path: string, filetype: "dir" | "file") {
+    if (!socket) return
+
+    if (filetype === "dir") {
+      socket.emit("getFiles", path, (data: Files[]) => {
+        const newFiles = updateFiles(explorer, path, data);
+        setExplorer(newFiles);
+      });
+    }
+    else {
+      socket.emit("getContent", path, (data: string) => {
+        setFile(data, path)
+      });
+    }
   }
+
+
 
   return (
     <div style={{ height: "60vh", width: "20%", backgroundColor: "#d5d5d5" }}>
-      {files.map((file) => (
+      {explorer.map((file) => (
         <FileTab
           key={file.name}
           file={file}
-          getFiles={(path: string) => getFiles(path)}
+          getData={getData}
         />
       ))}
     </div>
@@ -61,24 +77,25 @@ export default function Explorer({ socket }: { socket: Socket }) {
 
 function FileTab({
   file,
-  getFiles,
+  getData,
 }: {
   file: Files;
-  getFiles: (path: string) => void;
+  getData: (path: string, type: "dir" | "file") => void;
 }) {
   const [toggle, setToggle] = useState(true)
   const isFetched = useRef<boolean>(false);
 
   function handleClick(type: "dir" | "file", path: string) {
     if (type === "dir") {
+
       if (!isFetched.current) {
-        getFiles(path);
+        getData(path, type);
         isFetched.current = true;
       } else {
         setToggle(!toggle)
       }
     } else {
-      console.log("Open file")
+      getData(path, type);
     }
   }
 
@@ -87,7 +104,7 @@ function FileTab({
       <p onClick={() => handleClick(file.type, file.path)}>{file.name}</p>
       {(file.children && toggle) &&
         file.children.map((child) => (
-          <FileTab key={child.name} file={child} getFiles={getFiles} />
+          <FileTab key={child.name} file={child} getData={getData} />
         ))}
     </div>
   );

@@ -1,8 +1,8 @@
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import React, { useEffect, useRef } from "react";
-import { Socket } from "socket.io-client";
 import "@xterm/xterm/css/xterm.css";
+import { useSocket } from "../store/useSocket.ts";
 
 const fitAddon = new FitAddon();
 const OPTIONS_TERM = {
@@ -16,14 +16,15 @@ const OPTIONS_TERM = {
   },
 };
 
-export default function TerminalComponent({ socket }: { socket: Socket }) {
+export default function TerminalComponent() {
+  const socket = useSocket(state => state.socket)
+
   const terminalRef = useRef<null | HTMLElement>(null);
   const didInit = useRef<boolean>(false);
 
   useEffect(() => {
     // Return if terminal is already rendered or the ref is not set 
-    if (didInit.current) return;
-    if (!terminalRef.current) return;
+    if (didInit.current || !terminalRef.current || !socket) return;
 
     // Create terminal on the server
     socket.emit("createTerminal");
@@ -51,7 +52,7 @@ export default function TerminalComponent({ socket }: { socket: Socket }) {
     return () => {
       terminal.clear()
     }
-  }, [terminalRef]);
+  }, [terminalRef, socket]);
 
   return <div ref={terminalRef as React.RefObject<HTMLDivElement>}></div>;
 }

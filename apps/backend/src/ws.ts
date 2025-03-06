@@ -49,6 +49,16 @@ io.on("connection", (socket) => {
     })
   })
 
+  socket.on("writeFile", (file, callback) => {
+    fs.writeFile(file.path, file.content, (err) => {
+      if (err) {
+        console.error(err)
+        return err;
+      }
+      callback()
+    })
+  })
+
   socket.on("createTerminal", () => {
     terminalManager.createTerminal(socket.id, sessionId, (data) => {
       socket.emit("terminalData", { data: Buffer.from(data, "utf-8") })
