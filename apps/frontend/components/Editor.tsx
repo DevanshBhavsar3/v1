@@ -13,7 +13,7 @@ export default function Editor() {
 
       setFile(updatedFile.content, updatedFile.path)
 
-      socket.emit("writeFile", updatedFile, () => {
+      socket.emit("writeContent", updatedFile, () => {
         // TODO: Show this on the ui
         console.log("File saved")
       })

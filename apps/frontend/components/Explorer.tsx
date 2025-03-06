@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useRef, useState } from "react";
 import { useSocket } from "../store/useSocket.ts";
 import { useFile } from "../store/useFile.ts";
@@ -15,16 +15,28 @@ interface Files {
 export default function Explorer() {
   const socket = useSocket(state => state.socket)
   const setFile = useFile(state => state.setFile)
+  const [explorer, setExplorer] = useState<Files[]>([]);
 
-  const [explorer, setExplorer] = useState<Files[]>([
-    { type: "dir", name: "CodePlayground", path: BASE_DIR, children: [] },
-  ]);
+  useEffect(() => {
+    getData(BASE_DIR, "dir")
+  }, [socket])
+
+  useEffect(() => {
+    socket?.on("updateFiles", (data) => {
+      const updatedFiles = updateFiles(explorer, data.path, data.files)
+      setExplorer(updatedFiles)
+    })
+  }, [socket, explorer])
 
   function updateFiles(
     files: Files[],
     path: string,
     newChildren: Files[]
   ): Files[] {
+    if (path === BASE_DIR) {
+      return [...newChildren]
+    }
+
     return files.map((file) => {
       // If this is the file we're looking for, update its children
       if (file.path === path) {
@@ -60,8 +72,6 @@ export default function Explorer() {
     }
   }
 
-
-
   return (
     <div style={{ height: "60vh", width: "20%", backgroundColor: "#d5d5d5" }}>
       {explorer.map((file) => (
@@ -83,17 +93,13 @@ function FileTab({
   getData: (path: string, type: "dir" | "file") => void;
 }) {
   const [toggle, setToggle] = useState(true)
-  const isFetched = useRef<boolean>(false);
 
   function handleClick(type: "dir" | "file", path: string) {
     if (type === "dir") {
-
-      if (!isFetched.current) {
+      if (!toggle) {
         getData(path, type);
-        isFetched.current = true;
-      } else {
-        setToggle(!toggle)
       }
+      setToggle(!toggle)
     } else {
       getData(path, type);
     }

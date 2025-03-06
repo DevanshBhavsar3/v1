@@ -3,10 +3,13 @@ import { Server } from "socket.io"
 import { createServer } from "node:http"
 import { TerminalManager } from "./terminalManager"
 import fs from "fs"
+import { WORK_DIR } from "./constants"
+import { ExplorerManager } from "./explorerManager"
 
 const BASE_DIR = "/home/devansh/CodePlayground"
 
 const terminalManager = new TerminalManager()
+const explorerManager = new ExplorerManager()
 const app = express()
 const server = createServer(app)
 const io = new Server(server, {
@@ -27,36 +30,21 @@ io.on("connection", (socket) => {
   }
 
   socket.on("getFiles", (path, callback) => {
-    fs.readdir(path, { withFileTypes: true }, (err, data) => {
-      if (err) {
-        console.error(err)
-        return err;
-      }
-
-      const files = data.map(file => ({ type: file.isDirectory() ? "dir" : "file", path: `${path}/${file.name}`, name: file.name }))
-      callback(files)
+    explorerManager.watchFiles(path, () => {
+      explorerManager.getFiles(path, (files) => {
+        socket.emit("updateFiles", { path, files })
+      })
     })
+
+    explorerManager.getFiles(path, callback)
   })
 
   socket.on("getContent", (path, callback) => {
-    fs.readFile(path, "utf-8", (err, data) => {
-      if (err) {
-        console.error(err)
-        return err;
-      }
-
-      callback(data)
-    })
+    explorerManager.getContent(path, callback)
   })
 
-  socket.on("writeFile", (file, callback) => {
-    fs.writeFile(file.path, file.content, (err) => {
-      if (err) {
-        console.error(err)
-        return err;
-      }
-      callback()
-    })
+  socket.on("writeContent", (file, callback) => {
+    explorerManager.writeContent(file, callback)
   })
 
   socket.on("createTerminal", () => {
