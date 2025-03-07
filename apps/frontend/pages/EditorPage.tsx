@@ -1,27 +1,33 @@
-import { useEffect } from "react"
-import TerminalComponent from "../components/Terminal.tsx"
-import Explorer from "../components/Explorer.tsx"
-import Editor from "../components/Editor.tsx"
-import { io } from "socket.io-client"
-import { useSocket } from "../store/useSocket.ts"
+import React, { useEffect } from "react";
+import TerminalComponent from "../components/Terminal.tsx";
+import Explorer from "../components/Explorer.tsx";
+import Editor from "../components/Editor.tsx";
+import Chat from "../components/Chat.tsx";
+import { io } from "socket.io-client";
+import { useSocket } from "../store/useSocket.ts";
 
 export default function EditorPage() {
-  const setSocketState = useSocket((state) => state.setSocket)
+  const setSocketState = useSocket((state) => state.setSocket);
 
   useEffect(() => {
-    const socket = io("ws://localhost:8080")
-    setSocketState(socket)
+    const socket = io("ws://localhost:8080");
+    setSocketState(socket);
 
     return () => {
-      socket.disconnect()
-    }
-  }, [])
+      socket.disconnect();
+    };
+  }, []);
 
-  return <div style={{ width: "100vw", height: "100vh" }}>
-    <div style={{ display: "flex" }}>
-      <Explorer />
-      <Editor />
+  return (
+    <div className="w-full h-screen flex">
+      <Chat />
+      <div className="w-2/3 h-full">
+        <div className="h-2/3 w-full flex overflow-auto">
+          <Explorer />
+          <Editor />
+        </div>
+        <TerminalComponent />
+      </div>
     </div>
-    <TerminalComponent />
-  </div>
+  );
 }

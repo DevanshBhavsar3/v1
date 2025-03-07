@@ -13,20 +13,24 @@ interface Files {
 }
 
 export default function Explorer() {
-  const socket = useSocket(state => state.socket)
-  const setFile = useFile(state => state.setFile)
+  const socket = useSocket((state) => state.socket);
+  const setFile = useFile((state) => state.setFile);
   const [explorer, setExplorer] = useState<Files[]>([]);
 
   useEffect(() => {
-    getData(BASE_DIR, "dir")
-  }, [socket])
+    getData(BASE_DIR, "dir");
+  }, [socket]);
 
   useEffect(() => {
     socket?.on("updateFiles", (data) => {
-      const updatedFiles = updateFiles(explorer, data.path, data.files)
-      setExplorer(updatedFiles)
-    })
-  }, [socket, explorer])
+      const updatedFiles = updateFiles(explorer, data.path, data.files);
+      setExplorer(updatedFiles);
+    });
+
+    socket?.on("updateContent", (data) => {
+      setFile(data.data, data.path);
+    });
+  }, [socket, explorer]);
 
   function updateFiles(
     files: Files[],
@@ -34,7 +38,7 @@ export default function Explorer() {
     newChildren: Files[]
   ): Files[] {
     if (path === BASE_DIR) {
-      return [...newChildren]
+      return [...newChildren];
     }
 
     return files.map((file) => {
@@ -57,29 +61,24 @@ export default function Explorer() {
   }
 
   function getData(path: string, filetype: "dir" | "file") {
-    if (!socket) return
+    if (!socket) return;
 
     if (filetype === "dir") {
       socket.emit("getFiles", path, (data: Files[]) => {
         const newFiles = updateFiles(explorer, path, data);
         setExplorer(newFiles);
       });
-    }
-    else {
+    } else {
       socket.emit("getContent", path, (data: string) => {
-        setFile(data, path)
+        setFile(data, path);
       });
     }
   }
 
   return (
-    <div style={{ height: "60vh", width: "20%", backgroundColor: "#d5d5d5" }}>
+    <div className="w-1/4 bg-[#d5d5d5] overflow-auto">
       {explorer.map((file) => (
-        <FileTab
-          key={file.name}
-          file={file}
-          getData={getData}
-        />
+        <FileTab key={file.name} file={file} getData={getData} />
       ))}
     </div>
   );
@@ -92,14 +91,14 @@ function FileTab({
   file: Files;
   getData: (path: string, type: "dir" | "file") => void;
 }) {
-  const [toggle, setToggle] = useState(true)
+  const [toggle, setToggle] = useState(true);
 
   function handleClick(type: "dir" | "file", path: string) {
     if (type === "dir") {
       if (!toggle) {
         getData(path, type);
       }
-      setToggle(!toggle)
+      setToggle(!toggle);
     } else {
       getData(path, type);
     }
@@ -108,7 +107,8 @@ function FileTab({
   return (
     <div>
       <p onClick={() => handleClick(file.type, file.path)}>{file.name}</p>
-      {(file.children && toggle) &&
+      {file.children &&
+        toggle &&
         file.children.map((child) => (
           <FileTab key={child.name} file={child} getData={getData} />
         ))}
