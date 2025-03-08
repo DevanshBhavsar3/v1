@@ -6,12 +6,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -b",
-    "start": "node dist/ws.js",
+    "start": "node dist/ws.js & node dist/index.js",
     "dev": "pnpm run build && pnpm run start"
   },
   "devDependencies": {
     "@repo/common": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0"
   },
   "keywords": [],
@@ -20,6 +21,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.22.0",
     "@repo/db": "workspace:*",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "node-pty": "^1.0.0",
