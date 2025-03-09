@@ -1,13 +1,62 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Prompt } from "@repo/common";
+import cors from "cors";
 import express from "express";
-import { Server } from "socket.io";
 import { createServer } from "node:http";
-import { TerminalManager } from "./utils/terminalManager";
+import { Server } from "socket.io";
+import { SYSTEM_PROMPT } from "./prompts";
+import { ArtifactProcessor } from "./utils/artifactProcessor";
 import { ExplorerManager } from "./utils/explorerManager";
+import { TerminalManager } from "./utils/terminalManager";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 const terminalManager = new TerminalManager();
 const explorerManager = new ExplorerManager();
 const app = express();
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.0-flash",
+  systemInstruction: SYSTEM_PROMPT,
+});
+
+app.use(express.json());
+app.use(cors());
+
+app.post("/prompt", async (req, res) => {
+  try {
+    const parsedBody = Prompt.safeParse(req.body);
+
+    if (!parsedBody.success) {
+      res.status(400).json({ error: "Invalid Prompt" });
+      return;
+    }
+
+    const { prompt } = parsedBody.data;
+    terminalManager.createTerminal((data) => console.log(data));
+
+    const parser = new ArtifactProcessor(
+      (command: string) => {
+        terminalManager.write(command);
+      },
+      (content: string) => console.log(content)
+    );
+    const response = await model.generateContentStream(prompt);
+
+    for await (const chunk of response.stream) {
+      const chunkText = chunk.text();
+      parser.append(chunkText);
+    }
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({ error: "Something went wrong." });
+    return;
+  }
+});
+
 const server = createServer(app);
+
 const io = new Server(server, {
   cors: {
     origin: "*",
@@ -17,11 +66,12 @@ const io = new Server(server, {
 
 io.on("connection", (socket) => {
   const host = socket.handshake.headers.host;
-  const sessionId = host?.split(".")[0];
+  const sessionId = "1"; // host?.split(".")[0];
 
   if (!sessionId) {
     socket.disconnect();
-    terminalManager.exit(socket.id);
+    // terminalManager.exit(socket.id);
+    terminalManager.exit();
     return;
   }
 
@@ -50,13 +100,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("createTerminal", () => {
-    terminalManager.createTerminal(socket.id, sessionId, (data) => {
+    // terminalManager.createTerminal(socket.id, sessionId, (data) => {
+    terminalManager.createTerminal((data) => {
       socket.emit("terminalData", { data: Buffer.from(data, "utf-8") });
     });
   });
 
   socket.on("writeTerminal", ({ data }) => {
-    terminalManager.write(socket.id, data);
+    // terminalManager.write(socket.id, data);
+    terminalManager.write(data);
   });
 });
 

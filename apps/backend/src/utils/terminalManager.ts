@@ -2,32 +2,35 @@
 import { fork, IPty } from "node-pty";
 
 interface terminal {
-  terminal: IPty,
-  sessionId: string
+  terminal: IPty;
+  sessionId: string;
 }
 
 export class TerminalManager {
+  private session: IPty | null = null;
   private sessions: Record<string, terminal> = {};
 
-  createTerminal(socketId: string, sessionId: string, onData: (data: string) => void) {
-    const terminal = fork("bash", [], {
-      name: "xterm",
-      cols: 100,
-      cwd: "/",
-    });
+  createTerminal(onData: (data: string) => void) {
+    if (!this.session) {
+      this.session = fork("bash", [], {
+        name: "xterm",
+        cols: 100,
+        cwd: "/",
+      });
 
-    this.sessions[socketId] = { terminal, sessionId }
-
-    // Add event to send commands to client
-    terminal.onData((data: string) => onData(data))
+      // Add event to send commands to client
+      this.session!.onData((data: string) => onData(data));
+    }
   }
 
-  write(socketId: string, command: string) {
+  write(command: string) {
     // Write commands to server's terminal
-    this.sessions[socketId]?.terminal.write(command)
+    // this.sessions[socketId]?.terminal.write(command);
+    this.session!.write(command);
   }
 
-  exit(socketId: string) {
-    this.sessions[socketId]?.terminal.kill()
+  exit() {
+    // this.sessions[socketId]?.terminal.kill();
+    this.session!.kill();
   }
 }
