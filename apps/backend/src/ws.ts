@@ -38,15 +38,20 @@ app.post("/prompt", async (req, res) => {
 
     const parser = new ArtifactProcessor(
       (command: string) => {
+        console.log(command);
         terminalManager.write(command);
       },
-      (content: string) => console.log(content)
+      (content: string, path: string) => {
+        console.log(path);
+        explorerManager.writeContent({ path, content });
+      }
     );
     const response = await model.generateContentStream(prompt);
 
     for await (const chunk of response.stream) {
       const chunkText = chunk.text();
       parser.append(chunkText);
+      ``;
     }
   } catch (e) {
     console.log(e);
@@ -65,15 +70,15 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  const host = socket.handshake.headers.host;
-  const sessionId = "1"; // host?.split(".")[0];
+  // const host = socket.handshake.headers.host;
+  // const sessionId = "1"; // host?.split(".")[0];
 
-  if (!sessionId) {
-    socket.disconnect();
-    // terminalManager.exit(socket.id);
-    terminalManager.exit();
-    return;
-  }
+  // if (!sessionId) {
+  //   socket.disconnect();
+  //   // terminalManager.exit(socket.id);
+  //   terminalManager.exit();
+  //   return;
+  // }
 
   socket.on("getFiles", (path, callback) => {
     explorerManager.watchFiles(path, () => {

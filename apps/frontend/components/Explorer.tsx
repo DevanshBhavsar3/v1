@@ -1,9 +1,8 @@
 import React, { useEffect } from "react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useSocket } from "../store/useSocket.ts";
 import { useFile } from "../store/useFile.ts";
-
-const BASE_DIR = "/home/devansh/CodePlayground";
+import { WORK_DIR } from "@repo/common";
 
 interface Files {
   type: "file" | "dir";
@@ -18,7 +17,7 @@ export default function Explorer() {
   const [explorer, setExplorer] = useState<Files[]>([]);
 
   useEffect(() => {
-    getData(BASE_DIR, "dir");
+    getData(WORK_DIR, "dir");
   }, [socket]);
 
   useEffect(() => {
@@ -37,7 +36,7 @@ export default function Explorer() {
     path: string,
     newChildren: Files[]
   ): Files[] {
-    if (path === BASE_DIR) {
+    if (path === WORK_DIR) {
       return [...newChildren];
     }
 

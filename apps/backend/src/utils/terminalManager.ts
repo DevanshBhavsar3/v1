@@ -1,3 +1,4 @@
+import { WORK_DIR } from "@repo/common";
 // @ts-ignore
 import { fork, IPty } from "node-pty";
 
@@ -15,7 +16,7 @@ export class TerminalManager {
       this.session = fork("bash", [], {
         name: "xterm",
         cols: 100,
-        cwd: "/",
+        cwd: WORK_DIR,
       });
 
       // Add event to send commands to client
