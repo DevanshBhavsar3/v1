@@ -1,6 +1,6 @@
 import { useFile } from "../store/useFile";
 import { useSocket } from "../store/useSocket";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export default function Editor() {
   const [content, setContent] = useState<string>("");

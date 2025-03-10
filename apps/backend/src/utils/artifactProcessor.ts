@@ -4,10 +4,6 @@ import { WORK_DIR } from "@repo/common";
 export class ArtifactProcessor {
   public response: string = "";
   private buffer: string = "";
-  private inShellCommand: boolean = false;
-  private inArtifact: boolean = false;
-  private currentArtifactPath: string = "";
-  private currentContent: string = "";
   private onCommand: (command: string) => void;
   private onFileUpdate: (content: string, path: string) => void;
 
@@ -31,6 +27,11 @@ export class ArtifactProcessor {
   }
 
   parseBuffer() {
+    this.processShellCommands();
+    this.processArtifact();
+  }
+
+  processShellCommands() {
     // Check for complete ShellCommand tags
     const shellStartIdx = this.buffer.indexOf("<ShellCommand>");
     const shellEndIdx = this.buffer.indexOf("</ShellCommand>");
@@ -56,10 +57,10 @@ export class ArtifactProcessor {
 
       // Continue parsing in case there are more complete tags
       this.parseBuffer();
-      return;
     }
+  }
 
-    // Check for complete Artifact tags
+  processArtifact() {
     const artifactStartRegex = /<Artifact type="([^"]+)" path="([^"]+)">/;
     const artifactStartMatch = this.buffer.match(artifactStartRegex);
     const artifactEndIdx = this.buffer.indexOf("</Artifact>");
@@ -75,7 +76,7 @@ export class ArtifactProcessor {
           .trim();
 
         if (artifactPath) {
-          this.onFileUpdate(artifactContent, WORK_DIR + artifactPath);
+          this.onFileUpdate(artifactContent, WORK_DIR + "/" + artifactPath);
         }
 
         // Remove the processed artifact from buffer

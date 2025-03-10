@@ -9,7 +9,7 @@ interface File {
 
 export class ExplorerManager {
   watchFiles(path: string, callback: () => void) {
-    fs.watch(path, (event, filename) => {
+    fs.watch(path, () => {
       callback();
     });
   }
@@ -26,6 +26,7 @@ export class ExplorerManager {
         path: `${path}/${file.name}`,
         name: file.name,
       }));
+
       callback(files);
     });
   }
@@ -51,7 +52,6 @@ export class ExplorerManager {
         console.error(mkdirErr);
         return mkdirErr;
       }
-      console.log(file.path);
 
       // Now write the file
       fs.writeFile(file.path, file.content, (err) => {

@@ -5,4 +5,4 @@ export const Prompt = z.object({
 });
 
 export const WORK_DIR_NAME = "project";
-export const WORK_DIR = `/home/devansh/CodePlayground/${WORK_DIR_NAME}/`;
+export const WORK_DIR = `/home/devansh/CodePlayground/${WORK_DIR_NAME}`;

@@ -34,15 +34,13 @@ app.post("/prompt", async (req, res) => {
     }
 
     const { prompt } = parsedBody.data;
-    terminalManager.createTerminal((data) => console.log(data));
+    terminalManager.createTerminal((data) => {});
 
     const parser = new ArtifactProcessor(
       (command: string) => {
-        console.log(command);
         terminalManager.write(command);
       },
       (content: string, path: string) => {
-        console.log(path);
         explorerManager.writeContent({ path, content });
       }
     );
@@ -53,6 +51,8 @@ app.post("/prompt", async (req, res) => {
       parser.append(chunkText);
       ``;
     }
+
+    res.json({ msg: "Generation Successfull." });
   } catch (e) {
     console.log(e);
     res.status(400).json({ error: "Something went wrong." });

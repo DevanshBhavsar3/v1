@@ -9,7 +9,6 @@ interface terminal {
 
 export class TerminalManager {
   private session: IPty | null = null;
-  private sessions: Record<string, terminal> = {};
 
   createTerminal(onData: (data: string) => void) {
     if (!this.session) {
@@ -18,10 +17,9 @@ export class TerminalManager {
         cols: 100,
         cwd: WORK_DIR,
       });
-
-      // Add event to send commands to client
-      this.session!.onData((data: string) => onData(data));
     }
+    // Add event to send commands to client
+    this.session!.onData((data: string) => onData(data));
   }
 
   write(command: string) {
