@@ -1,8 +1,10 @@
+import { useDiff } from "../store/useDiff";
 import { useFile } from "../store/useFile";
 import { useSocket } from "../store/useSocket";
 import React, { useEffect, useState } from "react";
 
 export default function Editor() {
+  const setDiff = useDiff((state) => state.updateDiff);
   const [content, setContent] = useState<string>("");
   const socket = useSocket((state) => state.socket);
   const { setFile, file } = useFile((state) => state);
@@ -19,6 +21,7 @@ export default function Editor() {
         const updatedFile = { content, path: file.path };
 
         setFile(updatedFile.content, updatedFile.path);
+        setDiff(updatedFile.content, updatedFile.path);
 
         socket.emit("writeContent", updatedFile, () => {
           // TODO: Show this on the ui

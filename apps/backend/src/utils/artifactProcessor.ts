@@ -3,7 +3,6 @@ import { WORK_DIR } from "@repo/common";
 
 export class ArtifactProcessor {
   public response: string = "";
-  private buffer: string = "";
   private onCommand: (command: string) => void;
   private onFileUpdate: (content: string, path: string) => void;
 
@@ -17,75 +16,79 @@ export class ArtifactProcessor {
 
   append(chunk: string) {
     this.response += chunk;
-    this.buffer += chunk;
 
     fs.appendFile(__dirname + "/../../tmp/response.txt", chunk, (err) =>
       console.error(err)
     );
 
-    this.parseBuffer();
-  }
-
-  parseBuffer() {
-    this.processShellCommands();
     this.processArtifact();
   }
 
-  processShellCommands() {
-    // Check for complete ShellCommand tags
-    const shellStartIdx = this.buffer.indexOf("<ShellCommand>");
-    const shellEndIdx = this.buffer.indexOf("</ShellCommand>");
+  // parseBuffer() {
+  //   // this.processShellCommands();
+  // }
 
-    if (
-      shellStartIdx !== -1 &&
-      shellEndIdx !== -1 &&
-      shellEndIdx > shellStartIdx
-    ) {
-      // We have a complete shell command
-      const commandContent = this.buffer
-        .substring(shellStartIdx + "<ShellCommand>".length, shellEndIdx)
-        .trim();
+  // processShellCommands() {
+  //   // Check for complete ShellCommand tags
+  //   const shellStartIdx = this.buffer.indexOf("<ShellCommand>");
+  //   const shellEndIdx = this.buffer.indexOf("</ShellCommand>");
 
-      if (commandContent) {
-        this.onCommand(commandContent + "\n");
-      }
+  //   if (
+  //     shellStartIdx !== -1 &&
+  //     shellEndIdx !== -1 &&
+  //     shellEndIdx > shellStartIdx
+  //   ) {
+  //     // We have a complete shell command
+  //     const commandContent = this.buffer
+  //       .substring(shellStartIdx + "<ShellCommand>".length, shellEndIdx)
+  //       .trim();
 
-      // Remove the processed command from buffer
-      this.buffer = this.buffer.substring(
-        shellEndIdx + "</ShellCommand>".length
-      );
+  //     if (commandContent) {
+  //       this.onCommand(commandContent + "\n");
+  //     }
 
-      // Continue parsing in case there are more complete tags
-      this.parseBuffer();
-    }
-  }
+  //     // Remove the processed command from buffer
+  //     this.buffer = this.buffer.substring(
+  //       shellEndIdx + "</ShellCommand>".length
+  //     );
+
+  //     // Continue parsing in case there are more complete tags
+  //     this.parseBuffer();
+  //   }
+  // }
 
   processArtifact() {
-    const artifactStartRegex = /<Artifact type="([^"]+)" path="([^"]+)">/;
-    const artifactStartMatch = this.buffer.match(artifactStartRegex);
-    const artifactEndIdx = this.buffer.indexOf("</Artifact>");
+    const artifactStartRegex =
+      /<v1Action type="([^"]+)"( filePath="([^"]+)")?\s*>/;
+    const artifactStartMatch = this.response.match(artifactStartRegex);
+    const artifactEndIdx = this.response.indexOf("</v1Action>");
 
     if (artifactStartMatch && artifactEndIdx !== -1) {
       const startIdx = artifactStartMatch.index || 0;
       const endOfStartTag = startIdx + artifactStartMatch[0].length;
 
       if (artifactEndIdx > endOfStartTag) {
-        const artifactPath = artifactStartMatch[2];
-        const artifactContent = this.buffer
+        const artifactType = artifactStartMatch[1];
+        const artifactPath = artifactStartMatch[3];
+        const artifactContent = this.response
           .substring(endOfStartTag, artifactEndIdx)
           .trim();
 
-        if (artifactPath) {
-          this.onFileUpdate(artifactContent, WORK_DIR + "/" + artifactPath);
+        if (artifactType === "shell") {
+          this.onCommand(artifactContent + "\n");
+        } else {
+          if (artifactPath) {
+            this.onFileUpdate(artifactContent, WORK_DIR + "/" + artifactPath);
+          }
         }
 
-        // Remove the processed artifact from buffer
-        this.buffer = this.buffer.substring(
-          artifactEndIdx + "</Artifact>".length
+        // Remove the processed artifact from response
+        this.response = this.response.substring(
+          artifactEndIdx + "</v1Action>".length
         );
 
         // Continue parsing in case there are more complete tags
-        this.parseBuffer();
+        this.processArtifact();
       }
     }
   }

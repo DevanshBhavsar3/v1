@@ -1,7 +1,9 @@
 import React, { useRef } from "react";
 import axios from "axios";
+import { useDiff } from "../store/useDiff";
 
 export default function Chat() {
+  const diff = useDiff((state) => state.updatedFiles);
   const promptRef = useRef<null | HTMLTextAreaElement>(null);
 
   async function sendPrompt() {
@@ -9,6 +11,7 @@ export default function Chat() {
 
     await axios.post(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/prompt`, {
       prompt: promptRef.current.value,
+      context: JSON.stringify(diff),
     });
   }
 
