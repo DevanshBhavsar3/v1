@@ -24,39 +24,6 @@ export class ArtifactProcessor {
     this.processArtifact();
   }
 
-  // parseBuffer() {
-  //   // this.processShellCommands();
-  // }
-
-  // processShellCommands() {
-  //   // Check for complete ShellCommand tags
-  //   const shellStartIdx = this.buffer.indexOf("<ShellCommand>");
-  //   const shellEndIdx = this.buffer.indexOf("</ShellCommand>");
-
-  //   if (
-  //     shellStartIdx !== -1 &&
-  //     shellEndIdx !== -1 &&
-  //     shellEndIdx > shellStartIdx
-  //   ) {
-  //     // We have a complete shell command
-  //     const commandContent = this.buffer
-  //       .substring(shellStartIdx + "<ShellCommand>".length, shellEndIdx)
-  //       .trim();
-
-  //     if (commandContent) {
-  //       this.onCommand(commandContent + "\n");
-  //     }
-
-  //     // Remove the processed command from buffer
-  //     this.buffer = this.buffer.substring(
-  //       shellEndIdx + "</ShellCommand>".length
-  //     );
-
-  //     // Continue parsing in case there are more complete tags
-  //     this.parseBuffer();
-  //   }
-  // }
-
   processArtifact() {
     const artifactStartRegex =
       /<v1Action type="([^"]+)"( filePath="([^"]+)")?\s*>/;

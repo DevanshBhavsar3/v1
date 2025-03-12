@@ -1,18 +1,28 @@
 import React, { useRef } from "react";
 import axios from "axios";
 import { useDiff } from "../store/useDiff";
+import { useNavigate } from "react-router";
 
-export default function Chat() {
+export default function Chat({ type }: { type: "chat" | "edit" }) {
+  const navigate = useNavigate();
   const diff = useDiff((state) => state.updatedFiles);
   const promptRef = useRef<null | HTMLTextAreaElement>(null);
 
   async function sendPrompt() {
     if (!promptRef.current?.value) return;
 
-    await axios.post(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/prompt`, {
-      prompt: promptRef.current.value,
-      context: JSON.stringify(diff),
-    });
+    await axios.post(
+      `${import.meta.env.VITE_PUBLIC_BACKEND_URL}/${type}`,
+      {
+        prompt: promptRef.current.value,
+        context: JSON.stringify(diff),
+      },
+      {
+        withCredentials: true,
+      }
+    );
+
+    navigate("/editor");
   }
 
   return (

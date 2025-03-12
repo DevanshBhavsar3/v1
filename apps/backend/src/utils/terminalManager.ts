@@ -10,7 +10,7 @@ interface terminal {
 export class TerminalManager {
   private session: IPty | null = null;
 
-  createTerminal(onData: (data: string) => void) {
+  createTerminal(onData?: (data: string) => void) {
     if (!this.session) {
       this.session = fork("bash", [], {
         name: "xterm",
@@ -19,7 +19,7 @@ export class TerminalManager {
       });
     }
     // Add event to send commands to client
-    this.session!.onData((data: string) => onData(data));
+    this.session!.onData((data: string) => onData && onData(data));
   }
 
   write(command: string) {

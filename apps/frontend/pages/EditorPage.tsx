@@ -20,7 +20,7 @@ export default function EditorPage() {
 
   return (
     <div className="w-full h-screen flex">
-      <Chat />
+      <Chat type="edit" />
       <div className="w-2/3 h-full">
         <div className="h-2/3 w-full flex overflow-auto">
           <Explorer />
