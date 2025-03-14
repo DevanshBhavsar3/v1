@@ -10,13 +10,13 @@ import * as dotenv from "dotenv";
 import prisma from "@repo/db/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { authMiddleware } from "./auth";
 import cookieParser from "cookie-parser";
+import { authMiddleware } from "./auth";
 import { JWT_SECRET } from "./config";
+import { ProjectType } from "../types";
 
 dotenv.config();
 
-let project_Type: "NEXTJS" | "REACT_NATIVE" | "REACT";
 // TODO: Support multiple projects
 const terminalManager = new TerminalManager();
 terminalManager.createTerminal();
@@ -31,18 +31,25 @@ const parser = new ArtifactProcessor(
 );
 const app = express();
 
-app.use(express.json());
 app.use(cookieParser());
+app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (origin.includes("localhost:5173")) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
+    methods: ["GET", "POST", "DELETE", "OPTIONS"],
     credentials: true,
   })
 );
 
-async function getTemplate(
-  prompt: string
-): Promise<"NEXTJS" | "REACT_NATIVE" | "REACT"> {
+async function getTemplate(prompt: string): Promise<ProjectType> {
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
   const model = genAI.getGenerativeModel({
     model: "gemini-2.0-flash",
@@ -53,10 +60,7 @@ async function getTemplate(
     USER: ${prompt}`
   );
 
-  const result = response.response.text().trim() as
-    | "NEXTJS"
-    | "REACT_NATIVE"
-    | "REACT";
+  const result = response.response.text().trim() as unknown as ProjectType;
 
   return result;
 }
@@ -70,21 +74,25 @@ app.post("/signup", async (req, res) => {
       return;
     }
 
-    const { username, password, email } = parsedBody.data;
+    const { username, password } = parsedBody.data;
     const hashedPassword = await bcrypt.hash(password, 7);
 
     const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
-        email,
       },
     });
 
-    const token = jwt.sign({ id: user.id }, JWT_SECRET);
-    res.cookie("token", token, { sameSite: "lax", httpOnly: true });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET);
+    res.cookie("token", token, {
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      domain: ".localhost",
+    });
 
-    res.json({ msg: "Sign Up successfull." });
+    res.json({ token });
   } catch (e) {
     console.log(e);
     res.status(400).json({ error: "Something went wrong." });
@@ -101,11 +109,11 @@ app.post("/login", async (req, res) => {
       return;
     }
 
-    const { email, password } = parsedBody.data;
+    const { username, password } = parsedBody.data;
 
     const user = await prisma.user.findUnique({
       where: {
-        email,
+        username,
       },
     });
 
@@ -120,10 +128,15 @@ app.post("/login", async (req, res) => {
       return;
     }
 
-    const token = jwt.sign({ id: user.id }, JWT_SECRET);
-    res.cookie("token", token, { sameSite: "lax", httpOnly: true });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET);
+    res.cookie("token", token, {
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      domain: ".localhost",
+    });
 
-    res.json({ msg: "Log In successfull." });
+    res.json({ token });
   } catch (e) {
     console.log(e);
     res.status(400).json({ error: "Something went wrong." });
@@ -134,6 +147,8 @@ app.post("/login", async (req, res) => {
 app.use(authMiddleware);
 
 app.post("/chat", async (req, res) => {
+  const userId = req.userId || "";
+
   try {
     const parsedBody = Prompt.safeParse(req.body);
 
@@ -145,10 +160,13 @@ app.post("/chat", async (req, res) => {
     const { prompt } = parsedBody.data;
 
     const template = await getTemplate(prompt);
-    project_Type = template;
-    console.log(template);
 
-    // create a new project
+    const project = await prisma.project.create({
+      data: {
+        userId,
+        type: template,
+      },
+    });
 
     const systemPrompt = SYSTEM_PROMPT(template);
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
@@ -160,7 +178,7 @@ app.post("/chat", async (req, res) => {
     const response = await model.generateContent(prompt);
     parser.append(response.response.text());
 
-    res.json({ msg: "Generation Successfull." });
+    res.json(project);
   } catch (e) {
     console.log(e);
     res.status(400).json({ error: "Something went wrong." });
@@ -177,9 +195,20 @@ app.post("/edit", async (req, res) => {
       return;
     }
 
-    const { prompt, context } = parsedBody.data;
+    const { projectId, prompt, context } = parsedBody.data;
 
-    const systemPrompt = SYSTEM_PROMPT(project_Type);
+    const project = await prisma.project.findUnique({
+      where: {
+        id: projectId,
+      },
+    });
+
+    if (!project) {
+      res.status(400).json({ error: "No project found." });
+      return;
+    }
+
+    const systemPrompt = SYSTEM_PROMPT(project.type);
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash",

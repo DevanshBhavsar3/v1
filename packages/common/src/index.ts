@@ -5,6 +5,7 @@ export const Prompt = z.object({
 });
 
 export const EditPrompt = z.object({
+  projectId: z.number(),
   prompt: z.string(),
   context: z.string(),
 });
@@ -12,11 +13,10 @@ export const EditPrompt = z.object({
 export const SignUpSchema = z.object({
   username: z.string(),
   password: z.string(),
-  email: z.string().email(),
 });
 
 export const LogInSchema = z.object({
-  email: z.string().email(),
+  username: z.string(),
   password: z.string(),
 });
 

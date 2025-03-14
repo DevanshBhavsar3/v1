@@ -15,18 +15,25 @@ datasource db {
 
 model User {
   id       String    @id @default(uuid())
-  username String
+  username String    @unique
   password String
-  email    String    @unique
+  // email    String    @unique
   projects Project[]
 }
 
+enum ProjectType {
+  NEXTJS
+  REACT_NATIVE
+  REACT
+}
+
 model Project {
-  id        Int      @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   userId    String
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
   prompts   Prompt[]
-  User      User     @relation(fields: [userId], references: [id])
+  type      ProjectType
+  User      User        @relation(fields: [userId], references: [id])
 }
 
 model Prompt {
